@@ -6,6 +6,7 @@
 #include "Vector.cpp"
 #include "Point.cpp"
 #include "Ray.cpp"
+#include "AABB.cpp"
 
 class sphere : public object{
     private:
@@ -60,11 +61,20 @@ class sphere : public object{
         double intersect(ray &r) override {
             double t;
 
+            //std::clog << "entrando na função de intersessão da ESFERA" << std::endl;
+
+            //std::clog << "esfera: (" << center.getX() << "," <<
+            //center.getY() << ", "<< center.getZ() << ") " << std::endl;
+
+            //std::clog << "ray origin: (" << r.origin.getX() << "," <<
+            //r.origin.getY() << ", "<< r.origin.getZ() << ") " << std::endl;
+
             vetor oc = (r.origin) - (this->getPonto());
             double a = r.direction.produto_escalar(r.direction);
             double b = 2.0 * oc.produto_escalar(r.direction);
             double c = oc.produto_escalar(oc) - (this->radius * this->radius);
             double delta = (b * b) - (4 * a * c);
+
             if (delta >= 0)
             {
                 t = (-b - sqrt(delta)) / 2 * a;
@@ -78,11 +88,21 @@ class sphere : public object{
             }
             this->ra = &r;
             this->ta = t;
+
+            //std::clog << "t: " << t << std::endl;
             
             return t;
             
         }
 
+
+        virtual AABB getAABB() override {
+            // Assuming BoundingBox has min and max points
+            point min_point(center.getX() - radius, center.getY() - radius, center.getZ() - radius);
+            point max_point(center.getX() + radius, center.getY() + radius, center.getZ() + radius);
+            return AABB(min_point, max_point);
+        }
+  
         virtual vetor getNormal() override {
             point ponto_intersecao = ra->f(this->ta);
             return (ponto_intersecao - this->center).normalizar();

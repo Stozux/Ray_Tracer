@@ -4,6 +4,7 @@
 #include "Point.cpp"
 #include "Vector.cpp"
 #include "Ray.cpp"
+#include "AABB.cpp"
 
 class object {
 protected:
@@ -34,6 +35,7 @@ public:
     virtual void translacao(double dx, double dy, double dz) = 0;
     virtual void cisalhamento(double shXY, double shXZ, double shYX, double shYZ, double shZX, double shZY) = 0;
 
+    virtual AABB getAABB() = 0;
 
 
     virtual ~object() {}

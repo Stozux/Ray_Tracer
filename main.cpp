@@ -6,125 +6,126 @@
 #include <string>
 
 #include "src/Camera.cpp"
+//#include "src/CameraOriginal.cpp"
 #include "src/Plane.cpp"
 #include "src/Vector.cpp"
 #include "src/Sphere.cpp"
-#include "src/Triangle.cpp"
-#include "src/ObjReader.cpp"
-#include "src/Mesh.cpp"
-#include "src/Colormap.cpp"
+#include "src/AABB.cpp"
+#include "src/Octrees.cpp"
+#include "src/Object.cpp"
 
 using namespace std;
 
-point calcular_centroide(std::vector<object*>& triangulos) {
-    double somaX = 0;
-    double somaY = 0;
-    double somaZ = 0;
-    int numTriangulos = triangulos.size();
-    point centro;
-    for (int i = 0; i < numTriangulos; i++) {
-        centro = triangulos[i]->getPonto();
-        somaX += centro.getX();
-        somaY += centro.getY();
-        somaZ += centro.getZ();
+AABB calculateSceneAABB( std::vector<object*>& objects) {
+    if (objects.empty()) {
+        // Define a default bounding box if no objects are present
+        point mn,mx;
+        mn = point(0.1, 0.1, 0.1);
+        mx = point(1000,1000,1000);
+        return AABB(mn, mx);
     }
 
-    double centroComumX = somaX / numTriangulos;
-    double centroComumY = somaY / numTriangulos;
-    double centroComumZ = somaZ / numTriangulos;
+    // Initialize min and max with the first object's bounding box
+    AABB scene_box = objects[0]->getAABB();
 
-    return point(centroComumX, centroComumY, centroComumZ);
-}
+    /*
+    std::clog << "scene_box min: (" << scene_box.min.getX() << "," <<
+    scene_box.min.getY() << ", " << scene_box.min.getZ() << ") " << std::endl;
 
-void rotacao(vector<object*>& triangulos, double angle, char eixo) {
-    point distancia = calcular_centroide(triangulos);
-    distancia.print();
-    for (int i = 0; i < triangulos.size(); i++) {
-        triangulos[i]->rotacao(angle, eixo, distancia);
+    std::clog << "scene_box max: (" << scene_box.max.getX() << "," <<
+    scene_box.max.getY() << ", "<< scene_box.max.getZ() << ") " << std::endl;
+    //*/
+
+    for ( auto& obj : objects) {
+        AABB obj_box = obj->getAABB();
+
+        // tirando isso pra não dar erro de intersessão
+        /*
+        scene_box.min.setX(std::min(scene_box.min.getX(), obj_box.min.getX()));
+        scene_box.min.setX(std::min(scene_box.min.getY(), obj_box.min.getY()));
+        scene_box.min.setX(std::min(scene_box.min.getZ(), obj_box.min.getZ()));
+        */
+
+        scene_box.min = point(0.1, 0.1, 0.1);
+
+
+        scene_box.max.setX(std::max(scene_box.max.getX(), obj_box.max.getX()));
+        scene_box.max.setX(std::max(scene_box.max.getY(), obj_box.max.getY()));
+        scene_box.max.setX(std::max(scene_box.max.getZ(), obj_box.max.getZ()));
     }
-}
 
-void translacao(vector<object*>& triangulos, double dx, double dy, double dz) {
-    for (int i = 0; i < triangulos.size(); i++) {
-        triangulos[i]->translacao(dx, dy, dz);
-    }
+    return scene_box;
 }
-
-void cisalhamento(vector<object*>& triangulos, double shXY, double shXZ, double shYX, double shYZ, double shZX, double shZY) {
-    for (int i = 0; i < triangulos.size(); i++) {
-        triangulos[i]->cisalhamento(shXY, shXZ, shYX, shYZ, shZX, shZY);
-    }
-}
-
 
 int main() {
     ios::sync_with_stdio(false); cin.tie(NULL);
 
-    colormap cmap;
+    point pos_cam(0, 0, -1);  // Move the camera closer (5 units away from the origin)
+    point target_cam(0, 0, 0); // Looking towards the origin
+    vetor up_cam(0, 1, 0);     // Up direction along the Y-axis
 
-    objReader reader("./input/mamaco.obj", cmap);
+    camera cam(1600, pos_cam, target_cam, up_cam, 16.0/9.0, 1.0);
 
+    vector<object*> spheres;
 
-    point pos_cam(6,2,0);
-    point target_cam(0,0,0);
-    vetor up_cam(0,1,0);
-
-    camera cam(400, pos_cam, target_cam, up_cam, 16.0/9.0, 1.0);
-
-    // point origem_esfera1(1,0,2);
-    point origem_esfera1(4,1,2);    
-    point origem_esfera2(0,0.2,0);    
-    point origem_esfera3(1.5,-0.5,-2);
-
-    // vetor normal_plano(0,1,0);
-
-    vetor cor(1,0,0);
-    vetor cor2(0.4,0.4,0.4);
-    vetor cor3(0,0,0.5);
+    // Sphere parameters
+    double radius = 0.05;  // Small radius to ensure no intersection
     vetor kd = vetor(0.5, 0, 0);
-    vetor ks = vetor(1, 0, 0);
+    vetor ks = vetor(0, 0, 0);
     vetor ke = vetor(0.000000, 0.000000, 0.000000);
-    vetor ka = vetor(0.6, 1, 1);
-    double ns = 10.000000;
-    vetor k_esfera = vetor(0,0,0);
-    //vector <object*> triangulos;
-    vector<object*> triangulos = reader.getTriangles();
+    vetor ka = vetor(1, 1, 1);
+    double ns = 10.0;
+    double ni = 1.0;  // Refractive index
+    double d = 1.0;   // Fully opaque
 
-    rotacao(triangulos, 50.0, 'y');
+    // Calculate spacing
+    double x_spacing = 3.555 / 5.0; // Horizontal spacing based on viewport width
+    double y_spacing = 2.0 / 4.0;   // Vertical spacing based on viewport height
+    
+    double x = 0;  // Centered horizontally
+    double y = 0;    // Centered vertically
 
-    sphere esfera1 = sphere(origem_esfera2, 3, vetor(0,0,0), kd,k_esfera,ke,k_esfera, ns, 1.0, 0.0);
-    triangulos.push_back(&esfera1);
-    sphere esfera2 = sphere(origem_esfera2, 0.5, cor, kd,ks,ke,ka, ns, 0.0, 0.0);
-    triangulos.push_back(&esfera2);
-    sphere esfera3 = sphere(origem_esfera1,0.5, vetor(0,0,0.5), kd,ks,ke,ka, ns, 0.0, 1.0);
-    // triangulos.push_back(&esfera3);
-    // sphere esfera4 = sphere(origem_esfera2, 0.5, cor3, kd,ks,ke,ka, ns, 0.0, 0.0);
-    // triangulos.push_back(&esfera4);
+    point center(x, y, 1.5);  // Move spheres closer to the camera along the Z-axis
 
-    // sphere esfera3 = sphere(origem_esfera3, 1, cor3, kd,ks,ke,ka, ns, ni, 0.0);
-    // triangulos.push_back(&esfera3);
-    // rotacao(triangulos, 45.0, 'X');
-    // rotacao(triangulos, 45.0, 'Y');
-    // rotacao(triangulos, 45.0, 'Z');
-    // translacao(triangulos, 0, 3, 0);
+    sphere* esfera = new sphere(center, radius, vetor(1,1,1), kd, ks, ke, ka, ns, ni, d);
+    //spheres.push_back(esfera);
 
-    point origem_plano(0,-4,0);
-    vetor ka_plano = vetor(0,0,0);
-    vetor cor_plano(0.,0.5,0);
-    plane plano = plane(origem_plano, vetor(0, 1, 0), cor_plano, kd,ks,ke,ka_plano, ns, 0.0, 1.0);
-    triangulos.push_back(&plano);
+    for (int i = 0; i < 10; ++i) {  // Rows
+        for (int j = 0; j < 10; ++j) {  // Columns
+            double x = -3.2 + j * x_spacing;  // Centered horizontally
+            double y = -2.2 + i * y_spacing;    // Centered vertically
 
-    vector<light> lts;
-    point lt_pos(7, 3, 2);
-    point lt_pos2(0, 100, -100);
-    vetor lt_color(0.4,0.4,0.4);
-    light lt(lt_pos,lt_color);
-    light lt2(lt_pos2, lt_color);
-    lts.push_back(lt);
-    // lts.push_back(lt2);
+            point center(x, y, 1.5);  // Move spheres closer to the camera along the Z-axis
 
-    vetor ambiente_color(0.1,0.1,0.1);
-    cam.render(triangulos, lts, ambiente_color);
+            sphere* esfera = new sphere(center, radius, vetor(0,0,1), kd, ks, ke, ka, ns, ni, d);
+            spheres.push_back(esfera);
+        }
+    }
+    //
+
+    //- -------------------
+    // Calculate the scene's bounding box
+    //AABB sceneBounds = calculateSceneAABB(spheres);
+    point a(-4,-4,0);
+    point b(4,4,8);
+    AABB sceneBounds(a,b);
+
+    // Initialize the octree with the scene's bounding box
+    Octree octree(sceneBounds);
+
+    // Insert all spheres into the octree
+    for (auto obj : spheres) {
+        octree.insert(obj);
+        //std::clog << "chamou octree.insert" << std::endl;
+    }
+
+    std::clog << "main - octree objs: " << octree.objects.size() << std::endl;
+
+    // Render the scene using the octree
+    vetor ambient_light(1, 1, 1);
+    std::vector<light> lights; // Define lights as needed
+    cam.render(octree, lights, ambient_light);
+    //cam.render(spheres, lights, ambient_light);
 
     return 0;
 }

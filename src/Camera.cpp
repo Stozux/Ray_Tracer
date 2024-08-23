@@ -9,6 +9,7 @@
 #include "Sphere.cpp"
 #include "Triangle.cpp"
 #include "Light.cpp"
+#include "Octrees.cpp"
 
 using namespace std;
 
@@ -106,10 +107,11 @@ public:
         return t;
     }
 
+    // phong recursivo original
     vetor phong_shading(ray& r, vector<object*>& objetos, const vector<light>& lights, vetor ambient_light, int index)
     {
         vetor final_color(0,0,0);
-        if(index<=10)    // pode ser mudado
+        if(index<=2)    // pode ser mudado
         {   
             double t = INFINITY;
             double ind = 0;
@@ -124,6 +126,9 @@ public:
             }
             if(t!=INFINITY)
             {   
+                //std::clog << "raio que intersecta: " << std::endl;
+                //std::clog << r.direction.getX() << "," << r.direction.getY() << ", "<< r.direction.getZ() << ") " << std::endl;
+
                 index++;
                 point intersection = r.f(t);
                 vetor normal = objetos[ind]->getNormal().normalizar();
@@ -184,6 +189,120 @@ public:
         return final_color;
     }
 
+    // Phong simples pra usar com octree
+    vetor phongBB(ray& r, object* hitObject, const std::vector<light>& lights, const vetor& ambient_light, int index) {
+        //std::clog << "chamou phong BB" << std::endl;
+        //vetor v(255,0,0);
+        //return v;
+
+        // daqui pra baixo
+        
+        vetor final_color(0,0,0);
+
+        double t = INFINITY;
+        double ind = 0;
+        double result = ray_color(r, *hitObject);
+        if (result > 0.0 && result < t){
+            t = result;
+        }
+        if(t!=INFINITY)
+        {   
+            point intersection = r.f(t);
+            vetor normal = hitObject->getNormal().normalizar();
+            vetor objeto_color = hitObject->getColor();
+            
+            final_color =  final_color + (hitObject->getKa().getX() * ambient_light); // componente ambiente
+            
+            vetor view_dir = r.getDirection().normalizar();
+            vetor view_spec = (r.getOrigin() - intersection).normalizar();
+            for (const auto& light : lights) {
+                vetor light_dir = (light.getPosition() - intersection).normalizar();
+                
+                vetor reflect_dir = reflect(light_dir, normal);
+                
+                // Componente difusa
+                double diff = std::max(light_dir.produto_escalar(normal), 0.0);
+                final_color = final_color + ((hitObject->getKd().getX() * objeto_color) * diff);                            
+
+                // Componente especular
+                double spec = pow(std::max(view_spec.produto_escalar(reflect_dir), 0.0), hitObject->getShininess());
+                final_color = final_color + (light.getColor() * spec) * (hitObject->getKs().getX());
+            }
+        }
+
+        return final_color;
+    }
+
+
+    // Updated render method to use the octree
+    void render(Octree& octree, const std::vector<light>& lights, const vetor& ambient_light) {
+        int image_width = this->width;
+        int image_height = int(image_width / aspect_ratio);
+        image_height = (image_height < 1) ? 1 : image_height;
+
+        double viewport_width = viewport_height * aspect_ratio;
+        point camera_center = this->position;
+
+        // Vectors pointing to the edges of the viewport
+        vetor viewport_u = U * (viewport_width * -1);
+        vetor viewport_v = V * (viewport_height * -1);
+
+        // Vectors for calculating the position of the next pixel
+        vetor pixel_delta_u = viewport_u / image_width;
+        vetor pixel_delta_v = viewport_v / image_height;
+
+        // Top-left corner of the viewport
+        point viewport_upper_left = camera_center + W * focal_length - viewport_u / 2 - viewport_v / 2;
+
+        // Center of the first pixel
+        point pixel00_loc = viewport_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
+
+        std::clog << "octree objs: " << octree.objects.size() << std::endl;
+
+        int cnt = 0;
+
+        // Output the PPM header
+        std::cout << "P3\n" << image_width << " " << image_height << "\n255\n";
+
+        for (int j = 0; j < image_height; j++) {
+            //std::clog << "\rLines remaining: " << (image_height - j) << ' ' << std::flush;
+            for (int i = 0; i < image_width; i++) {
+                // Calculate the position of the current pixel
+                point pixel_center = pixel00_loc + pixel_delta_u * i + pixel_delta_v * j;
+
+                // Create a ray from the camera to the pixel
+                vetor ray_direction = (pixel_center - camera_center).normalizar();
+                ray r(camera_center, ray_direction);
+                /*
+                if (i + j == 1){
+                    std::clog << "r dir: (" << r.direction.getX() << "," <<
+                    r.direction.getY() << ", "<< r.direction.getZ() << ") " << std::endl;
+                }
+
+                */
+
+
+                //std::cout << "255 255 255\n";
+
+                // Use the octree to find the closest intersection
+                object* hitObject = nullptr;
+
+                //std::clog << cnt++ << std::endl;
+
+                double t = octree.findClosestIntersection(r, hitObject);
+
+                if (hitObject) {
+                    // Calculate color using the shading model
+                    vetor final_color = phongBB(r, hitObject, lights, ambient_light, 0);
+                    final_color.write_color(std::cout);
+                } else {
+                    // Output background color (e.g., black)
+                    std::cout << "0 0 0\n";
+                }
+            }
+        }
+        std::clog << "\rDone.                 \n";
+    }
 
     void render(vector<object*>& objetos, const vector<light>& lights, const vetor& ambient_light) {
         int image_width = this->width;
@@ -201,6 +320,8 @@ public:
         vetor pixel_delta_u = viewport_u / image_width;
         vetor pixel_delta_v = viewport_v / image_height;
 
+        int cnt = 0;
+
         // Ponto superior esquerdo do pixel inicial
         point viewport_upper_left = camera_center + W * focal_length - viewport_u / 2 - viewport_v / 2;
 
@@ -210,14 +331,27 @@ public:
         std::cout << "P3\n" << image_width << " " << image_height << "\n255\n";
 
         for (int j = 0; j < image_height; j++) {
-            std::clog << "\rLinhas restantes: " << (image_height - j) << ' ' << std::flush;
+            
+            //std::clog << "\rLinhas restantes: " << (image_height - j) << ' ' << std::flush;
             for (int i = 0; i < image_width; i++) {
+
+            
+
+
                 auto pixel_center = pixel00_loc + pixel_delta_u * i + pixel_delta_v * j;
                 auto ray_direction = pixel_center - camera_center;
                 ray_direction = ray_direction.normalizar();
                 ray r(camera_center, ray_direction);
+
+                /*
+                if (i + j == 1){
+                    std::clog << "r dir: (" << r.direction.getX() << "," <<
+                    r.direction.getY() << ", "<< r.direction.getZ() << ") " << std::endl;
+                }
+                */
+
+                //std::clog << cnt++ << std::endl;
                 
-                // tuple<int, double, vetor> pixel_info(0, 0, vetor(0, 0, 0));
 
                 vetor final_color = phong_shading(r,objetos,lights,ambient_light,0);
                 final_color.write_color(cout);
@@ -225,6 +359,7 @@ public:
         }
         std::clog << "\rDone.                 \n";
     }
+
 
 };
 
