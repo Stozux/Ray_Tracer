@@ -13,7 +13,7 @@
 
 
 vetor getMarbleColor(point& p, const PerlinNoise& perlin) {
-    double scale = 10.0;
+    double scale = 1.0;
     double turbulence = 5.0;
 
     // Calculate noise value

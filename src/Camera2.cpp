@@ -129,10 +129,10 @@ public:
                 vetor normal = objetos[ind]->getNormal().normalizar();
 
                 // Apply marble texture
-                //vetor objeto_color = getMarbleColor(intersection, perlin);
+                vetor objeto_color = getMarbleColor(intersection, perlin);
                 //vetor objeto_color = getWoodPattern(intersection, perlin);
                 //vetor objeto_color = getCheckerboardColor(intersection);
-                vetor objeto_color = getCheckerboardColor(intersection);
+                //vetor objeto_color = getCheckerboardColor(intersection);
 
                 final_color = final_color + (objetos[ind]->getKa().getX() * ambient_light); // componente ambiente
 
