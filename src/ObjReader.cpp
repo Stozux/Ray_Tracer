@@ -24,13 +24,13 @@ private:
     std::vector<point> vertices;
     std::vector<vetor> normals;
     std::vector<Face> faces;
-    std::vector<object*> triangles;
+    std::vector<triangle*> triangles;
     MaterialProperties curMaterial; // Guarda as propriedades do material atual
     colormap cmap;
 
 public:
     // Getters
-    std::vector<object*> getTriangles() {
+    std::vector<triangle*> getTriangles() {
         return this->triangles;
     }
 

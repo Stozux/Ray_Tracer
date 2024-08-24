@@ -82,7 +82,7 @@ vector<triangle*> create_torus(double R, double r, int small_rad_sub, int big_ra
 }
 
 
-point calcular_centroide(std::vector<object*>& triangulos) {
+point calcular_centroide(std::vector<triangle*>& triangulos) {
     double somaX = 0;
     double somaY = 0;
     double somaZ = 0;
@@ -102,7 +102,7 @@ point calcular_centroide(std::vector<object*>& triangulos) {
     return point(centroComumX, centroComumY, centroComumZ);
 }
 
-void rotacao(vector<object*>& triangulos, double angle, char eixo) {
+void rotacao(vector<triangle*>& triangulos, double angle, char eixo) {
     point distancia = calcular_centroide(triangulos);
     distancia.print();
     for (int i = 0; i < triangulos.size(); i++) {
@@ -129,10 +129,10 @@ int main() {
 
     colormap cmap;
 
-    objReader reader("./input/mamaco.obj", cmap);
+    objReader reader("./input/cubo.obj", cmap);
 
 
-    point pos_cam(4,4,4);
+    point pos_cam(10,10,10);
     point target_cam(0,0,0);
     vetor up_cam(-1,1,-1);
 
@@ -140,7 +140,7 @@ int main() {
     /*point target_cam(0,0,0);*/
     /*vetor up_cam(-1,0,0);*/
 
-    camera cam(800, pos_cam, target_cam, up_cam, 16.0/9.0, 2.2);
+    camera cam(400, pos_cam, target_cam, up_cam, 16.0/9.0, 2.2);
 
     // point origem_esfera1(1,0,2);
     point origem_esfera1(4,1,2);    
@@ -158,9 +158,9 @@ int main() {
     vetor ka = vetor(1, 1, 1);
     double ns = 10.000000;
     vetor k_esfera = vetor(0,0,0);
-    //vector <object*> triangulos;
-    // vector<object*> mamaco = reader.getTriangles();
-    vector<triangle*> triangulos = create_torus(2, 1, 10, 10, kd, ks, ke, ka, ns, 0.0, 0.0);
+    /*vector <object*> triangulos;*/
+    /*vector<triangle*> triangulos = reader.getTriangles();*/
+    vector<triangle*> triangulos = create_torus(3, 1, 20, 20, kd, ks, ke, ka, ns, 0.0, 0.0);
     // vector<object*> toro = create_torus(3.5, 0.3, 50, 50, kd, ks, ke, ka, ns, 1.0, 0.0);
 
     // for (auto i : mamaco) { triangulos.push_back(i); }
@@ -182,7 +182,7 @@ int main() {
     // triangulos.push_back(&esfera3);
     // rotacao(triangulos, 45.0, 'X');
     // rotacao(triangulos, 45.0, 'Y');
-    // rotacao(triangulos, 45.0, 'Z');
+    rotacao(triangulos, 100.0, 'Y');
     // translacao(triangulos, 0, 3, 0);
 
     /*point origem_plano(0,-4,0);*/
@@ -201,8 +201,6 @@ int main() {
     lts.push_back(lt2);
 
     vetor ambiente_color(0.1,0.1,0.1);
-
-    // translacao(triangulos, 0,0.2,0);
 
     cam.render(triangulos, lts, ambiente_color);
 

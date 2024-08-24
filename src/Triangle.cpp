@@ -104,9 +104,9 @@ public:
         double w = (d00 * d21 - d01 * d20) / denom;
         double u = 1.0f - v - w;
 
-        if (v >= 0 && v <= 1 &&
-            w >= 0 && v <= 1 &&
-            u >= 0 && v <= 1)
+        if (v >= -1e-6 && v <= 1 + 1e-6 &&
+            w >= -1e-6 && v <= 1 + 1e-6 &&
+            u >= -1e-6 && v <= 1 + 1e-6)
             return t;
 
         else

@@ -207,7 +207,7 @@ public:
     }
 
 
-    triangle* search_first_intersection(ray& ray, BSP_node* head, bool& intersectou) {
+    triangle* search_first_intersection(ray& ray, BSP_node* head, bool& intersectou, triangle* result) {
         /*clog << "buscando intersecao" << endl;*/
         if (head == nullptr) {
             return nullptr; // Caso base: nó nulo
@@ -218,28 +218,31 @@ public:
         // Checa interseção com os triângulos do nó atual
         for (auto tri : head->node_triangles) {
             if (ray_color(ray, *tri) != INFINITY) { // Função que verifica se o raio intersecta o triângulo
-                intersectou = true;
-                return tri;
+                if (result == nullptr || (tri->getPonto() - ray.origin).norma() < (result->getPonto() - ray.origin).norma()) {
+                    intersectou = true;
+                    result = tri;
+                    return tri;
+                }
             }
         }
 
         // Se não encontrar no nó atual, checa os filhos
-        triangle* result = nullptr;
+        /*result = nullptr;*/
 
-        if (c0 == -1) {
-            if (!intersectou) {
-                result = search_first_intersection(ray, head->atras, intersectou);
-            }
+        if (c0 == 1) {
+            result = search_first_intersection(ray, head->afrente, intersectou, result);
+            if (intersectou) return result;
             if (!intersectou && ray_intersects_node_plane(ray, head)) {
-                result = search_first_intersection(ray, head->afrente, intersectou);
+                result = search_first_intersection(ray, head->atras, intersectou, result);
+                if (intersectou) return result;
             }
 
         } else {
-            if (!intersectou) {
-                result = search_first_intersection(ray, head->afrente, intersectou);
-            }
+            result = search_first_intersection(ray, head->atras, intersectou, result);
+            if (intersectou) return result;
             if (!intersectou && ray_intersects_node_plane(ray, head)) {
-                result = search_first_intersection(ray, head->atras, intersectou);
+                result = search_first_intersection(ray, head->afrente, intersectou, result);
+                if (intersectou) return result;
             }
 
         }
@@ -258,7 +261,7 @@ public:
 
             /*clog << "definiu t" << endl;*/
             bool intersectou = false;
-            triangle* objeto_intersectado = search_first_intersection(r, objetos, intersectou);
+            triangle* objeto_intersectado = search_first_intersection(r, objetos, intersectou, nullptr);
             if (objeto_intersectado == nullptr) { t = INFINITY; }
             else { t = ray_color(r, *objeto_intersectado); }
 
@@ -359,6 +362,7 @@ public:
         triangle* tri1;
         triangle* tri2;
         triangle* tri3;
+        triangle* tri4;
 
         int classificacao_1 = classify_point(tri->getA(), normal, origem);
         int classificacao_2 = classify_point(tri->getB(), normal, origem);
@@ -406,7 +410,23 @@ public:
             split_res.push_back(tri2);
             split_res.push_back(tri3);
 
-        } else if (nf == 3 || na == 3) { split_res.push_back(tri); }
+        }
+        else if (nf == 2 && na == 2) {
+            point inter1 = intersect_plane(atras[0], frente[0], normal, origem);
+            point inter2 = intersect_plane(atras[1], frente[1], normal, origem);
+
+            tri1 = new triangle(norm, atras[1], inter1, frente[0], kd, ks, ke, ka, shininess, ni, D);
+            tri2 = new triangle(norm, atras[0], inter1, frente[1], kd, ks, ke, ka, shininess, ni, D);
+            tri3 = new triangle(norm, atras[1], inter2, frente[0], kd, ks, ke, ka, shininess, ni, D);
+            tri4 = new triangle(norm, atras[0], inter2, frente[1], kd, ks, ke, ka, shininess, ni, D);
+
+            split_res.push_back(tri1);
+            split_res.push_back(tri2);
+            split_res.push_back(tri3);
+            split_res.push_back(tri4);
+
+        }
+        else if (nf == 3 || na == 3) split_res.push_back(tri);
 
     return split_res;
     }
@@ -416,8 +436,8 @@ public:
 
         if (head->node_triangles.size() < 2) { return head; }
 
-        clog << "comecou a fazer a BSP" << endl;
-        clog << head->node_triangles.size() << endl;
+        /*clog << "comecou a fazer a BSP" << endl;*/
+        /*clog << head->node_triangles.size() << endl;*/
 
         BSP_node *atras = new BSP_node();
         BSP_node *afrente = new BSP_node();
@@ -454,8 +474,12 @@ public:
 
         head->node_triangles = novos_triangulos;
 
-        if (atras->node_triangles.size() >= 2) { atras = create_bsp(atras); }
-        if (afrente->node_triangles.size() >= 2) { afrente = create_bsp(afrente); }
+        if (atras->node_triangles.size() >= 2) {
+            create_bsp(atras);
+        }
+        if (afrente->node_triangles.size() >= 2) {
+            create_bsp(afrente);
+        }
 
         return head;
     }
