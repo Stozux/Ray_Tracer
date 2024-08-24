@@ -182,7 +182,6 @@ int main() {
     // triangulos.push_back(&esfera3);
     // rotacao(triangulos, 45.0, 'X');
     // rotacao(triangulos, 45.0, 'Y');
-    rotacao(triangulos, 100.0, 'Y');
     // translacao(triangulos, 0, 3, 0);
 
     /*point origem_plano(0,-4,0);*/
@@ -191,6 +190,7 @@ int main() {
     /*plane plano = plane(origem_plano, vetor(0, 1, 0), cor_plano, kd,ks,ke,ka_plano, ns, 0.0, 1.0);*/
     /*triangulos.push_back(&plano);*/
 
+    /*rotacao(triangulos, 100.0, 'Y');*/
     vector<light> lts;
     point lt_pos(7, 3, 2);
     point lt_pos2(0, 100, -100);

@@ -215,23 +215,24 @@ public:
 
         int c0 = classify_point(ray.origin, head->normal, head->origem);
 
-        // Checa interseção com os triângulos do nó atual
-        for (auto tri : head->node_triangles) {
-            if (ray_color(ray, *tri) != INFINITY) { // Função que verifica se o raio intersecta o triângulo
-                if (result == nullptr || (tri->getPonto() - ray.origin).norma() < (result->getPonto() - ray.origin).norma()) {
-                    intersectou = true;
-                    result = tri;
-                    return tri;
-                }
-            }
-        }
-
         // Se não encontrar no nó atual, checa os filhos
         /*result = nullptr;*/
 
         if (c0 == 1) {
             result = search_first_intersection(ray, head->afrente, intersectou, result);
             if (intersectou) return result;
+
+            // Checa interseção com os triângulos do nó atual
+            for (auto tri : head->node_triangles) {
+                if (ray_color(ray, *tri) != INFINITY) { // Função que verifica se o raio intersecta o triângulo
+                    if (result == nullptr || (tri->getPonto() - ray.origin).norma() < (result->getPonto() - ray.origin).norma()) {
+                        intersectou = true;
+                        result = tri;
+                        return tri;
+                    }
+                }
+            }
+
             if (!intersectou && ray_intersects_node_plane(ray, head)) {
                 result = search_first_intersection(ray, head->atras, intersectou, result);
                 if (intersectou) return result;
@@ -240,6 +241,18 @@ public:
         } else {
             result = search_first_intersection(ray, head->atras, intersectou, result);
             if (intersectou) return result;
+
+            // Checa interseção com os triângulos do nó atual
+            for (auto tri : head->node_triangles) {
+                if (ray_color(ray, *tri) != INFINITY) { // Função que verifica se o raio intersecta o triângulo
+                    if (result == nullptr || (tri->getPonto() - ray.origin).norma() < (result->getPonto() - ray.origin).norma()) {
+                        intersectou = true;
+                        result = tri;
+                        return tri;
+                    }
+                }
+            }
+
             if (!intersectou && ray_intersects_node_plane(ray, head)) {
                 result = search_first_intersection(ray, head->afrente, intersectou, result);
                 if (intersectou) return result;
