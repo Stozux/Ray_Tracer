@@ -18,14 +18,14 @@
 using namespace std;
 
 
-vector<object*> create_torus(double R, double r, int small_rad_sub, int big_rad_sub, vetor kd, vetor ks, vetor ke, vetor ka, double ns, double ni, double d) {
+vector<triangle*> create_torus(double R, double r, int small_rad_sub, int big_rad_sub, vetor kd, vetor ks, vetor ke, vetor ka, double ns, double ni, double d) {
 
     const double PI = 3.1415926;
 
     triangle* tri1;
     triangle* tri2;
 
-    vector<object*> torus_triangles;
+    vector<triangle*> torus_triangles;
     vector<vector<point> > points(big_rad_sub);
 
     double small_angle_increment = (2*PI) / small_rad_sub;
@@ -46,7 +46,7 @@ vector<object*> create_torus(double R, double r, int small_rad_sub, int big_rad_
             double z_pos = ((cos(curr_small_angle) * r) + R) * sin(curr_big_angle);
 
             point new_point(x_pos, y_pos, z_pos);
-            new_point.print();
+            /*new_point.print();*/
 
             points[i].push_back(new_point);
         }
@@ -124,6 +124,7 @@ void cisalhamento(vector<object*>& triangulos, double shXY, double shXZ, double 
 
 
 int main() {
+    clog << "comecou a main" << endl;
     ios::sync_with_stdio(false); cin.tie(NULL);
 
     colormap cmap;
@@ -131,7 +132,7 @@ int main() {
     objReader reader("./input/mamaco.obj", cmap);
 
 
-    point pos_cam(6,0,8);
+    point pos_cam(4,4,4);
     point target_cam(0,0,0);
     vetor up_cam(-1,1,-1);
 
@@ -139,7 +140,7 @@ int main() {
     /*point target_cam(0,0,0);*/
     /*vetor up_cam(-1,0,0);*/
 
-    camera cam(1920, pos_cam, target_cam, up_cam, 16.0/9.0, 2.2);
+    camera cam(800, pos_cam, target_cam, up_cam, 16.0/9.0, 2.2);
 
     // point origem_esfera1(1,0,2);
     point origem_esfera1(4,1,2);    
@@ -158,20 +159,20 @@ int main() {
     double ns = 10.000000;
     vetor k_esfera = vetor(0,0,0);
     //vector <object*> triangulos;
-    vector<object*> mamaco = reader.getTriangles();
-    vector<object*> triangulos = create_torus(2, 0.2, 50, 50, kd, ks, ke, ka, ns, 1.0, 0.0);
-    vector<object*> toro = create_torus(3.5, 0.3, 50, 50, kd, ks, ke, ka, ns, 1.0, 0.0);
+    // vector<object*> mamaco = reader.getTriangles();
+    vector<triangle*> triangulos = create_torus(2, 1, 10, 10, kd, ks, ke, ka, ns, 0.0, 0.0);
+    // vector<object*> toro = create_torus(3.5, 0.3, 50, 50, kd, ks, ke, ka, ns, 1.0, 0.0);
 
-    for (auto i : mamaco) { triangulos.push_back(i); }
+    // for (auto i : mamaco) { triangulos.push_back(i); }
 
-    rotacao(toro, 90.0, 'x');
+    // rotacao(toro, 90.0, 'x');
 
-    for (auto i : toro) { triangulos.push_back(i); }
+    // for (auto i : toro) { triangulos.push_back(i); }
 
-    sphere esfera1 = sphere(origem_esfera2, 3, vetor(0,0,0), kd,k_esfera,ke,k_esfera, ns, 1.0, 0.0);
-    triangulos.push_back(&esfera1);
-    sphere esfera2 = sphere(origem_esfera2, 0.5, cor, kd,ks,ke,ka, ns, 0.0, 0.0);
-    triangulos.push_back(&esfera2);
+    /*sphere esfera1 = sphere(origem_esfera2, 3, vetor(0,0,0), kd,k_esfera,ke,k_esfera, ns, 1.0, 0.0);*/
+    /*triangulos.push_back(&esfera1);*/
+    /*sphere esfera2 = sphere(origem_esfera2, 0.5, cor, kd,ks,ke,ka, ns, 0.0, 0.0);*/
+    /*triangulos.push_back(&esfera2);*/
     /*sphere esfera3 = sphere(origem_esfera1,0.5, vetor(0,0,0.5), kd,ks,ke,ka, ns, 0.0, 1.0);*/
     // triangulos.push_back(&esfera3);
     // sphere esfera4 = sphere(origem_esfera2, 0.5, cor3, kd,ks,ke,ka, ns, 0.0, 0.0);
@@ -184,11 +185,11 @@ int main() {
     // rotacao(triangulos, 45.0, 'Z');
     // translacao(triangulos, 0, 3, 0);
 
-    point origem_plano(0,-4,0);
-    vetor ka_plano = vetor(0,0,0);
-    vetor cor_plano(0.1,0.1,0.1);
-    plane plano = plane(origem_plano, vetor(0, 1, 0), cor_plano, kd,ks,ke,ka_plano, ns, 0.0, 1.0);
-    triangulos.push_back(&plano);
+    /*point origem_plano(0,-4,0);*/
+    /*vetor ka_plano = vetor(0,0,0);*/
+    /*vetor cor_plano(0.1,0.1,0.1);*/
+    /*plane plano = plane(origem_plano, vetor(0, 1, 0), cor_plano, kd,ks,ke,ka_plano, ns, 0.0, 1.0);*/
+    /*triangulos.push_back(&plano);*/
 
     vector<light> lts;
     point lt_pos(7, 3, 2);
@@ -201,7 +202,7 @@ int main() {
 
     vetor ambiente_color(0.1,0.1,0.1);
 
-    translacao(triangulos, 0,0.2,0);
+    // translacao(triangulos, 0,0.2,0);
 
     cam.render(triangulos, lts, ambiente_color);
 

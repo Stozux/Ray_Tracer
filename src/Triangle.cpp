@@ -55,7 +55,13 @@ public:
         this->origem = point((A.getX() + B.getX() + C.getX()) / 3,
                             (A.getY() + B.getY() + C.getY()) / 3,
                             (A.getZ() + B.getZ() + C.getZ()) / 3);
-        this->normal = (B-C).produto_vetorial(C-A).normalizar();
+
+        if (this->getNormal().getX() == 0 &&
+            this->getNormal().getY() == 0 &&
+            this->getNormal().getZ() == 0)
+        {
+            this->normal = (B-C).produto_vetorial(C-A).normalizar();   
+        }
     }
 
     // Construtor sem cor

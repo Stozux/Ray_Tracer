@@ -94,5 +94,6 @@ class sphere : public object{
 
         void rotacao(double angle, char eixo, point centroide) override {};
         void cisalhamento(double shXY, double shXZ, double shYX, double shYZ, double shZX, double shZY) override {};
+
 };
 #endif
