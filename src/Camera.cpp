@@ -96,20 +96,28 @@ public:
 
     // Função auxiliar para calcular o vetor refratado
 
-    vetor refract(vetor& incident, vetor& normal, double n1, double n2) {
-        double coso = incident.produto_escalar(normal);
-        double seno = sqrt(1 - (coso * coso));
-        double senot = (n2 / n1) * seno;
-        double cosot = sqrt(1 - senot * senot);
+    vetor refract(const vetor& incident, const vetor& normal, double n1, double n2) {
+        vetor norm = normal;
+        vetor incid = incident;
+        if(incid.norma() != 1) incid = incid.normalizar();
+        if(norm.norma() != 1) norm = norm.normalizar();
+        double coso = incid.produto_escalar(norm);
+        coso = coso * coso;
+        double seno = (1 - coso);
+        double cosot = (1 - seno);
+        // if(cosot!=coso) clog << "cosot != coso "<< endl;
+        double senot = sqrt(seno); 
+        vetor t = (incid * (n1 / n2));
         double cons = (cosot - ((n1 / n2) * coso));
-        vetor t = (incident * (n1 / n2)) - (normal * cons);
+        vetor normall = norm * cons;
+        t = t - normall; 
         return t;
     }
 
     vetor phong_shading(ray& r, vector<object*>& objetos, const vector<light>& lights, vetor ambient_light, int index)
     {
         vetor final_color(0,0,0);
-        if(index<=10)    // pode ser mudado
+        if(index<=5)
         {   
             double t = INFINITY;
             double ind = 0;
@@ -132,19 +140,30 @@ public:
                 final_color =  final_color + (objetos[ind]->getKa().getX() * ambient_light); // componente ambiente
                 
                 vetor view_dir = r.getDirection().normalizar();
-                vetor view_spec = (r.getOrigin() - intersection).normalizar();
+                vetor view_espc = (r.getOrigin() - intersection).normalizar();
                 for (const auto& light : lights) {
                     vetor light_dir = (light.getPosition() - intersection).normalizar();
-                    
                     vetor reflect_dir = reflect(light_dir, normal);
+                    int shadow = 1;
                     
+                    for(int p = 0; p < objetos.size(); p++)
+                    {
+                        point nintersection = intersection + light_dir * 0.00001;
+                        ray light_ray(nintersection, light_dir);
+                        double result = ray_color(light_ray, *objetos[p]);
+                        if(result > 0.0 and result != INFINITY) shadow = 0.3; 
+                    }
+        
                     // Componente difusa
                     double diff = std::max(light_dir.produto_escalar(normal), 0.0);
-                    final_color = final_color + ((objetos[ind]->getKd().getX() * objeto_color) * diff);                            
+                    final_color = final_color + ((objetos[ind]->getKd().getX() * objeto_color*shadow) * diff);                            
 
                     // Componente especular
-                    double spec = pow(std::max(view_spec.produto_escalar(reflect_dir), 0.0), objetos[ind]->getShininess());
-                    final_color = final_color + (light.getColor() * spec) * (objetos[ind]->getKs().getX());
+                    if(shadow == 1)
+                    {
+                        double spec = pow(std::max(view_espc.produto_escalar(reflect_dir), 0.0), objetos[ind]->getShininess());
+                        final_color = final_color + (light.getColor() * spec) * (objetos[ind]->getKs().getX())*shadow;
+                    }
 
                 }
 
@@ -165,15 +184,10 @@ public:
                     double n1 = 1; // Índice de refração do ar
                     double n2 = objetos[ind]->getNi(); // Índice de refração do objeto
                     vetor dir_refrac_ray;
-                    /*if(index==1) */
-                    /*{*/
-                    /*    dir_refrac_ray = refract(view_spec, normal, n1, n2);*/
-                    /*    dir_refrac_ray = dir_refrac_ray * -1;*/
-                    /*}*/
                     dir_refrac_ray = refract(view_dir, normal, n1, n2);
                     if (dir_refrac_ray.norma() != 0) { // Verifica se não houve reflexão total
-                        point new_intersection = intersection + dir_refrac_ray * 0.00001;
-                        ray refrac_ray(new_intersection, dir_refrac_ray);
+                        point neww_intersection = intersection + dir_refrac_ray * 0.00001;
+                        ray refrac_ray(neww_intersection, dir_refrac_ray);
                         vetor refrac_color = phong_shading(refrac_ray,objetos,lights, ambient_light, index);
                         refrac_color = refrac_color * (objetos[ind]->getNi());
                         final_color = final_color + (refrac_color);
@@ -207,23 +221,23 @@ public:
         // Calculando o ponto central do pixel
         point pixel00_loc = viewport_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
 
-        std::cout << "P3\n" << image_width << " " << image_height << "\n255\n";
+        cout << "P3\n" << image_width << " " << image_height << "\n255\n";
 
         for (int j = 0; j < image_height; j++) {
-            std::clog << "\rLinhas restantes: " << (image_height - j) << ' ' << std::flush;
+            if(j%10==0)clog << "\rLinhas restantes: " << (image_height - j) << ' ' << flush;
             for (int i = 0; i < image_width; i++) {
                 auto pixel_center = pixel00_loc + pixel_delta_u * i + pixel_delta_v * j;
                 auto ray_direction = pixel_center - camera_center;
                 ray_direction = ray_direction.normalizar();
                 ray r(camera_center, ray_direction);
                 
-                // tuple<int, double, vetor> pixel_info(0, 0, vetor(0, 0, 0));
+                tuple<int, double, vetor> pixel_info(0, 0, vetor(0, 0, 0));
 
                 vetor final_color = phong_shading(r,objetos,lights,ambient_light,0);
                 final_color.write_color(cout);
             }
         }
-        std::clog << "\rDone.                 \n";
+        clog << "\rDone.                 \n";
     }
 
 };
