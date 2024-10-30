@@ -1,3 +1,3 @@
 # Processamento_Grafico
 
-![macaco](assets/mamaco.png)
+![macaco](assets/Mamaco.png)
