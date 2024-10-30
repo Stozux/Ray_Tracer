@@ -83,8 +83,8 @@ class vetor{
         }
 
         vetor normalizar(){
-            double norma = (1 / this->norma());
-            return vetor(this->x * norma, this->y * norma, this->z * norma);
+            double norma = this->norma();
+            return vetor((this->x/norma), (this->y/norma), (this->z/norma));
         }
 
         /*

@@ -89,11 +89,11 @@ int main() {
     vector <object*> triangulos;
     // vector<object*> triangulos = reader.getTriangles();
 
-    sphere esfera2 = sphere(origem_esfera2, 1.9, vetor(0,0,0), kd,ks,ke,ka, ns, 1.0, 0.0);
-    triangulos.push_back(&esfera2);
+    sphere esfera2 = sphere(origem_esfera2, 1.9, vetor(0,0,0), kd,ks,ke,ka, ns, 0.8, 0.0);
+    // triangulos.push_back(&esfera2);
     sphere esfera1 = sphere(origem_esfera2, 1.0, cor, kd,ks,ke,ka, ns, 0.0, 0.0);
     triangulos.push_back(&esfera1);
-    sphere esfera3 = sphere(origem_esfera1,0.5, vetor(0,0,0.5), kd,ks,ke,ka, ns, 0.0, 1.0);
+    sphere esfera3 = sphere(origem_esfera2, 1.5, vetor(0,0,0), kd,ks,ke,ka, ns, 1.0, 0.0);
     // triangulos.push_back(&esfera3);
     // sphere esfera4 = sphere(origem_esfera2, 0.5, cor3, kd,ks,ke,ka, ns, 0.0, 0.0);
     // triangulos.push_back(&esfera4);
